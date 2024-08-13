@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"html/template"
 	"mvc/pkg/auth"
 	"mvc/pkg/database"
@@ -18,7 +17,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
 
 		creds := r.FormValue("creds")
 		password := r.FormValue("password")
@@ -32,6 +35,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+		} else {
+			is_phone = false
 		}
 
 		if len(password) < 8 {
@@ -53,8 +58,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if logged_in {
-			fmt.Fprintf(w, "Welcome %s!", user.Username)
-
 			token, err := auth.CreateJWT(user)
 			if err != nil {
 				http.Error(w, "Some error occured", http.StatusInternalServerError)
@@ -66,6 +69,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				Value: token,
 				Path:  "/",
 			})
+
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 

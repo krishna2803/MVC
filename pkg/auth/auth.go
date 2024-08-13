@@ -53,3 +53,24 @@ func DecodeJWT(tokenString string) (JWTClaims, error) {
 
 	return claims, nil
 }
+
+func CheckAdmin(tokenString string) (bool, error) {
+	claims := JWTClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+	if err != nil {
+		return false, err
+	}
+
+	if !token.Valid {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	if claims.Role != "admin" {
+		return false, fmt.Errorf("not an admin")
+	}
+
+	return true, nil
+}

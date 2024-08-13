@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"mvc/pkg/auth"
 	"mvc/pkg/types"
 	"os"
 
@@ -36,5 +37,23 @@ func Init() error {
 		return err
 	}
 	DB = db
+
+	// superadmin
+	hashed_pass, err := auth.CreateHash(os.Getenv("SUPER_PASS"))
+	if err != nil {
+		return err
+	}
+
+	var user types.User
+	if db.Where("phone = ?", os.Getenv("SUPER_USER")).First(&user).Error != nil {
+		db.Create(&types.User{
+			Username: "admin",
+			Password: hashed_pass,
+			Phone:    os.Getenv("SUPER_USER"),
+			Email:    "admin@admin.com",
+			Address:  "admin",
+			Role:     "admin",
+		})
+	}
 	return nil
 }

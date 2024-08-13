@@ -12,7 +12,19 @@
     <button>Manage Users</button>
     <button>Manage Books</button>
     <button>Manage Book Requests</button>
-    <button>Logout</button>
+    <button id="logout-btn">Logout</button>
+
+    <script>
+        document.querySelector('#logout-btn').addEventListener('click', () => {
+            fetch('/logout', {
+                method: 'POST',
+            }).then(res => {
+                if (res.ok) {
+                    window.location.href = '/';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

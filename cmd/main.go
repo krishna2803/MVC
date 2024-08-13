@@ -2,6 +2,7 @@ package main
 
 import (
 	"mvc/pkg/api"
+	"mvc/pkg/controller"
 	"mvc/pkg/database"
 
 	"github.com/joho/godotenv"
@@ -9,11 +10,12 @@ import (
 
 func main() {
 	err := godotenv.Load()
-	database.Init()
-
 	if err != nil {
 		panic("Error loading .env file")
 	}
+	database.Init()
+
+	controller.AddDummyBookData()
 
 	api.Start()
 }

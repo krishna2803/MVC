@@ -1,10 +1,13 @@
 package types
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Book struct {
 	gorm.Model
-	ID       uint   `json:"id" gorm:"->;unique;primaryKey;autoIncrement"`
 	Title    string `json:"title" gorm:"not null; type:varchar(255)"`
 	Author   string `json:"author" gorm:"not null; type:varchar(255)"`
 	Genre    string `json:"genre" gorm:"not null; type:varchar(255)"`
@@ -13,9 +16,18 @@ type Book struct {
 	Count    int    `json:"count" gorm:"not null; default:1"`
 }
 
+type APIBook struct {
+	ID       uint   `json:"id"`
+	Title    string `json:"title"`
+	Author   string `json:"author"`
+	Genre    string `json:"genre"`
+	Language string `json:"language"`
+	Summary  string `json:"summary"`
+	Count    int    `json:"count"`
+}
+
 type User struct {
 	gorm.Model
-	ID       uint   `json:"id" gorm:"->;unique;primaryKey;autoIncrement"`
 	Username string `json:"username" gorm:"not null"`
 	Password string `json:"password" gorm:"not null"`
 	Phone    string `json:"phone" gorm:"unique; not null; type:char(10)"`
@@ -24,15 +36,33 @@ type User struct {
 	Role     string `json:"role" gorm:"default:user; not null"` // user, admin
 }
 
+type APIUser struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Phone    string `json:"phone"`
+	Email    string `json:"email"`
+	Address  string `json:"address"`
+	Role     string `json:"role"`
+}
+
 type Borrow struct {
 	gorm.Model
-	ID         uint   `json:"id" gorm:"->;unique;primaryKey;autoIncrement"`
-	BookID     uint   `json:"book_id" gorm:"not null"`
-	UserID     uint   `json:"user_id" gorm:"not null"`
-	Status     string `json:"status" gorm:"default:pending; not null"` // pending','approved','denied','returned
-	Count      int    `json:"count" gorm:"not null"`                   // count of book when it was borrowed
-	BorrowedAt string `json:"borrowed_at" gorm:"type: timestamp; default: null"`
-	ReturnedAt string `json:"returned_at" gorm:"not null; type: timestamp"`
+	BookID     uint      `json:"book_id" gorm:"not null"`
+	UserID     uint      `json:"user_id" gorm:"not null"`
+	Status     string    `json:"status" gorm:"default:pending; not null"` // pending','approved','denied','returned
+	Count      int       `json:"count" gorm:"not null"`                   // count of book when it was borrowed
+	BorrowedAt time.Time `json:"borrowed_at" gorm:"type: timestamp; default: current_timestamp"`
+	ReturnedAt time.Time `json:"returned_at" gorm:"not null; type: timestamp"`
 	Book       Book
 	User       User
+}
+
+type APIBorrow struct {
+	ID         uint   `json:"id"`
+	BookID     uint   `json:"book_id"`
+	UserID     uint   `json:"user_id"`
+	Status     string `json:"status"`
+	Count      int    `json:"count"`
+	BorrowedAt string `json:"borrowed_at"`
+	ReturnedAt string `json:"returned_at"`
 }

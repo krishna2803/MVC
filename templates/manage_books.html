@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Books</title>
+</head>
+
+<body>
+    <p>
+    <h1>Book Management</h1>
+    </p>
+
+    <button id="req-btn" onclick="requestSelectedBooks()" disabled>Request Selected Books</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Genre</th>
+                <th>Language</th>
+                <th>Summary</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range . }}
+            <tr>
+                <td><input type="checkbox" name="book" value="{{ .ID }}"></td>
+                <td>{{ .Title }}</td>
+                <td>{{ .Author }}</td>
+                <td>{{ .Genre }}</td>
+                <td>{{ .Language }}</td>
+                <td>{{ .Summary }}</td>
+                <td>{{ .Count }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+
+    <script>
+        const requestSelectedBooks = () => {
+            const selectedBooks = document.querySelectorAll('input[name="book"]:checked');
+            if (selectedBooks.length < 1) {
+                alert('Please select at least one book to delete.');
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
+
+            const send_data = new URLSearchParams();
+            for (const pair of formData) {
+                send_data.append(pair[0], pair[1]);
+            }
+
+            fetch('/borrow_books', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: send_data
+            }).then(
+                async res => alert(await res.text())
+            ).catch(err => console.error(err));
+        }
+
+        const checkboxes = document.querySelectorAll('input[name="book"]');
+        const requestButton = document.getElementById('req-btn');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="book"]:checked').length;
+                if (requestButton)
+                    requestButton.disabled = selectedCount === 0;
+            });
+        });
+    </script>
+</body>
+
+</html>

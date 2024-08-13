@@ -11,7 +11,12 @@ import (
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		r.ParseForm()
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
 		username := r.FormValue("username")
 		phone := r.FormValue("phone")
 		email := r.FormValue("email")
