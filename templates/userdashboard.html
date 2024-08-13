@@ -9,13 +9,13 @@
     Welcome! {{ .Name }}
 
     <h1>Dashboard</h1>
-    <button>Profile</button>
-    <button>Borrow a book</button>
+    <button onclick="window.location.href = '/profile'">Profile</button>
+    <button onclick="window.location.href = '/books'">Borrow books</button>
     <button>Borrow history</button>
     <button id="logout-btn">Logout</button>
 
     <script>
-        document.querySelector('#logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', () => {
             fetch('/logout', {
                 method: 'POST',
             }).then(res => {

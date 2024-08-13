@@ -65,7 +65,7 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 			database.DB.Create(&borrow)
 		}
 
-		fmt.Fprint(w, "Borrowed book(s) successfully! Hell Yea")
+		fmt.Fprintf(w, "Requested %d book(s) successfully!", len(ids))
 		return
 	}
 }
@@ -154,11 +154,10 @@ func ApproveBorrows(w http.ResponseWriter, r *http.Request) {
 
 			book.Count--
 			database.DB.Save(&book)
-
 			database.DB.Save(&borrow)
 		}
 
-		fmt.Fprint(w, "Borrow(s) approved successfully!")
+		fmt.Fprintf(w, "%d Borrow(s) approved successfully!", len(ids))
 		return
 	}
 }
@@ -193,7 +192,56 @@ func DenyBorrows(w http.ResponseWriter, r *http.Request) {
 			database.DB.Save(&borrow)
 		}
 
-		fmt.Fprint(w, "Borrow(s) approved successfully!")
+		fmt.Fprintf(w, "%d Borrow(s) denied successfully!", len(ids))
+		return
+	}
+}
+
+func ReturnBooks(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		id := r.FormValue("id")
+		var str_ids []string
+		err := json.Unmarshal([]byte(id), &str_ids)
+		if err != nil {
+			http.Error(w, "Invalid borrow ids!", http.StatusInternalServerError)
+			return
+		}
+
+		var ids []int64
+		for _, str_id := range str_ids {
+			id, err := strconv.ParseInt(str_id, 10, 64)
+			if err != nil || id <= 0 {
+				http.Error(w, "Invalid borrow ids!", http.StatusInternalServerError)
+				return
+			}
+			ids = append(ids, id)
+		}
+
+		cookie, _ := r.Cookie("token")
+		user, err := auth.DecodeJWT(cookie.Value)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
+		for _, id := range ids {
+			borrow := types.Borrow{}
+			database.DB.Find(&borrow, id).Where("user_id = ?", user.UserID)
+
+			borrow.Status = "returned"
+			borrow.ReturnedAt = time.Now()
+
+			var book types.Book
+			database.DB.First(&book, borrow.BookID)
+
+			book.Count++
+			database.DB.Save(&book)
+			database.DB.Save(&borrow)
+		}
+
+		fmt.Fprintf(w, "%d Books(s) returned successfully!", len(ids))
 		return
 	}
 }

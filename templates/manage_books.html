@@ -12,6 +12,166 @@
     <h1>Book Management</h1>
     </p>
 
+    {{ if eq .User.Role "admin" }}
+    <h1>Add a book</h1>
+    <div id="add-book-modal">
+        <div id="add-book-form" style="display: none;">
+            <form action="#" method="POST">
+                <label for="title">Title:</label>
+                <input id="book_title" type="text" name="title" required>
+                <label for="author">Author:</label>
+                <input id="book_author" type="text" name="author" required>
+                <label for="genre">Genre:</label>
+                <input id="book_genre" type="text" name="genre" required>
+                <label for="language">Language:</label>
+                <input id="book_language" type="text" name="language" required>
+                <label for="summary">Summary:</label>
+                <textarea id="book_summary" name="summary" class="form-control" rows="4" required></textarea>
+                <label for="count">Count:</label>
+                <input id="book_count" type="number" name="count" required>
+            </form>
+        </div>
+        <button id="add-book-btn" onclick="addBook()">Add Book</button>
+    </div>
+
+    <div id="update-book-modal">
+        <div id="update-book-form" style="display: none;">
+            <form action="#" method="POST">
+                <label for="title">Title:</label>
+                <input id="book_update_title" type="text" name="title" required>
+                <label for="author">Author:</label>
+                <input id="book_update_author" type="text" name="author" required>
+                <label for="genre">Genre:</label>
+                <input id="book_update_genre" type="text" name="genre" required>
+                <label for="language">Language:</label>
+                <input id="book_update_language" type="text" name="language" required>
+                <label for="summary">Summary:</label>
+                <textarea id="book_update_summary" name="summary" class="form-control" rows="4" required></textarea>
+                <label for="count">Count:</label>
+                <input id="book_update_count" type="number" name="count" required>
+            </form>
+        </div>
+        <button id="update-book-btn" onclick="updateBook()" disabled>Update Selected Book</button>
+    </div>
+
+    <button id="delete-books-btn" onclick="deleteBooks()" disabled>Delete Selected Books</button>
+
+
+    <script>
+        const addBook = () => {
+            const addBookForm = document.getElementById('add-book-form');
+            if (addBookForm.style.display === 'none') {
+                addBookForm.style.display = 'block';
+            } else {
+                let formData = new URLSearchParams();
+                formData.append('title', document.getElementById('book_title').value);
+                formData.append('author', document.getElementById('book_author').value);
+                formData.append('genre', document.getElementById('book_genre').value);
+                formData.append('language', document.getElementById('book_language').value);
+                formData.append('summary', document.getElementById('book_summary').value);
+                formData.append('count', document.getElementById('book_count').value);
+
+                fetch('/add_book', {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    method: 'POST',
+                    body: formData
+                }).then(
+                    async res => {
+                        if (res.ok) {
+                            alert(await res.text());
+                            window.location.reload();
+                        } else {
+                            alert(await res.text());
+                        }
+                    }
+                ).catch(err => console.error(err));
+            }
+        }
+
+        const deleteBooks = () => {
+            const selectedBooks = document.querySelectorAll('input[name="book"]:checked');
+
+            const formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
+
+            fetch('/remove_books', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData
+            }).then(
+                async res => {
+                    if (res.ok) {
+                        alert(await res.text());
+                        window.location.reload();
+                    } else {
+                        alert(await res.text());
+                    }
+                }
+            ).catch(err => console.error(err));
+        }
+
+        const updateBook = () => {
+            const selectedBooks = document.querySelectorAll('input[name="book"]:checked');
+            if (selectedBooks.length !== 1) {
+                alert('Please select only one book to update');
+                return;
+            }
+
+            const updateBookForm = document.getElementById('update-book-form');
+            if (updateBookForm.style.display === 'none') {
+                updateBookForm.style.display = 'block';
+
+                const selectedRow = selectedBooks[0].closest('tr');
+                const title = selectedRow.querySelector('td:nth-child(2)').textContent.trim();
+                const author = selectedRow.querySelector('td:nth-child(3)').textContent.trim();
+                const genre = selectedRow.querySelector('td:nth-child(4)').textContent.trim();
+                const language = selectedRow.querySelector('td:nth-child(5)').textContent.trim();
+                const summary = selectedRow.querySelector('td:nth-child(6)').textContent.trim();
+                const count = selectedRow.querySelector('td:nth-child(7)').textContent.trim();
+
+                document.getElementById('book_update_title').value = title;
+                document.getElementById('book_update_author').value = author;
+                document.getElementById('book_update_genre').value = genre;
+                document.getElementById('book_update_language').value = language;
+                document.getElementById('book_update_summary').value = summary;
+                document.getElementById('book_update_count').value = count;
+                
+                document.getElementById('update-book-btn').innerText = "Update";
+            } else {
+                let formData = new URLSearchParams();
+                formData.append('id', selectedBooks[0].value);
+                formData.append('title', document.getElementById('book_update_title').value);
+                formData.append('author', document.getElementById('book_update_author').value);
+                formData.append('genre', document.getElementById('book_update_genre').value);
+                formData.append('language', document.getElementById('book_update_language').value);
+                formData.append('summary', document.getElementById('book_update_summary').value);
+                formData.append('count', document.getElementById('book_update_count').value);
+
+                fetch('/update_book', {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    method: 'POST',
+                    body: formData
+                }).then(
+                    async res => {
+                        if (res.ok) {
+                            alert(await res.text());
+                            window.location.reload();
+                        } else {
+                            alert(await res.text());
+                        }
+                    }
+                ).catch(err => console.error(err));
+            }
+        }
+    </script>
+    {{ end }}
+
     <button id="req-btn" onclick="requestSelectedBooks()" disabled>Request Selected Books</button>
 
     <table>
@@ -27,7 +187,7 @@
             </tr>
         </thead>
         <tbody>
-            {{ range . }}
+            {{ range .Books }}
             <tr>
                 <td><input type="checkbox" name="book" value="{{ .ID }}"></td>
                 <td>{{ .Title }}</td>
@@ -44,25 +204,16 @@
     <script>
         const requestSelectedBooks = () => {
             const selectedBooks = document.querySelectorAll('input[name="book"]:checked');
-            if (selectedBooks.length < 1) {
-                alert('Please select at least one book to delete.');
-                return;
-            }
 
-            let formData = new FormData();
+            const formData = new URLSearchParams();
             formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
-
-            const send_data = new URLSearchParams();
-            for (const pair of formData) {
-                send_data.append(pair[0], pair[1]);
-            }
 
             fetch('/borrow_books', {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 method: 'POST',
-                body: send_data
+                body: formData
             }).then(
                 async res => alert(await res.text())
             ).catch(err => console.error(err));
@@ -70,12 +221,18 @@
 
         const checkboxes = document.querySelectorAll('input[name="book"]');
         const requestButton = document.getElementById('req-btn');
+        const updateButton = document.getElementById('update-book-btn');
+        const deleteButton = document.getElementById('delete-books-btn');
 
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', () => {
                 const selectedCount = document.querySelectorAll('input[name="book"]:checked').length;
                 if (requestButton)
                     requestButton.disabled = selectedCount === 0;
+                if (deleteButton)
+                    deleteButton.disabled = selectedCount === 0;
+                if (updateButton)
+                    updateButton.disabled = selectedCount !== 1;
             });
         });
     </script>

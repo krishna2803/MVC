@@ -79,6 +79,28 @@ func RemoveUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func UserProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		t := template.Must(template.ParseFiles("templates/user_profile.html"))
+
+		cookie, _ := r.Cookie("token")
+		user, err := auth.DecodeJWT(cookie.Value)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
+		var user_profile types.User
+		database.DB.First(&user_profile, user.UserID)
+
+		err = t.Execute(w, user_profile)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		r.ParseForm()
@@ -89,6 +111,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		user.Username = r.FormValue("username")
 		user.Email = r.FormValue("email")
 		user.Phone = r.FormValue("phone")
+		hash, err := auth.CreateHash(r.FormValue("password"))
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+		user.Password = hash
 
 		if len(user.Phone) != 10 {
 			http.Error(w, "Phone number should be of 10 digits", http.StatusBadRequest)
@@ -102,12 +130,24 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		if len(user.Password) < 8 {
+			http.Error(w, "Password should be atleast 8 characters", http.StatusBadRequest)
+			return
+		}
+
+		if user.Email == "" || user.Username == "" {
+			http.Error(w, "Name and Email cannot be empty", http.StatusBadRequest)
+			return
+		}
+
 		user.Address = r.FormValue("address")
 
-		err := database.DB.Save(&user).Error
+		err = database.DB.Save(&user).Error
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
 		}
+
+		fmt.Fprintf(w, "User updated successfully!")
 	}
 }

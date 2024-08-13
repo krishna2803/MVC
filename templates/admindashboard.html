@@ -15,7 +15,7 @@
     <button id="logout-btn">Logout</button>
 
     <script>
-        document.querySelector('#logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', () => {
             fetch('/logout', {
                 method: 'POST',
             }).then(res => {

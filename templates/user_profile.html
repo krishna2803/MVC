@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | {{ .Username }}</title>
+</head>
+
+<body>
+    <h1>User Profile</h1>
+    <button onclick="window.location.href = '/'">Back</button>
+    <form id="profile_form" method="POST">
+        <label for="username">Name:</label>
+        <input type="text" id="username" name="username" value="{{ .Username }}" disabled required>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value="{{ .Email }}" disabled required>
+        <label for="phone">Phone:</label>
+        <input type="tel" id="phone" name="phone" value="{{ .Phone }}" disabled required>
+        <label for="address">Address:</label>
+        <input type="text" id="address" name="address" value="{{ .Address }}" disabled required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password">
+
+        <button id="edit-btn" type="button" onclick="toggleEdit()">Edit Details</button>
+        <button id="submit-btn" type="button" onclick="update_profile()" disabled>Submit</button>
+    </form>
+    <button id="ask-admin-btn">Ask for admin role</button>
+    <button id="logout-btn">Logout</button>
+    <script>
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            fetch('/logout', {
+                method: 'POST',
+            }).then(res => {
+                if (res.ok) {
+                    window.location.href = '/';
+                }
+            });
+        });
+
+        const toggleEdit = () => {
+            document.getElementById("submit-btn").disabled = false;
+            document.getElementById('edit-btn').style.display = "none";
+            document.getElementById('username').disabled = false;
+            document.getElementById('email').disabled = false;
+            document.getElementById('phone').disabled = false;
+            document.getElementById('address').disabled = false;
+        }
+
+        const update_profile = () => {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const password = document.getElementById('password').value;
+
+            let formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('email', email);
+            formData.append('phone', phone);
+            formData.append('address', address);
+            formData.append('password', password);
+
+            fetch('/update_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData
+            }).then(
+                async res => alert(await res.text())
+            ).catch(err => console.error(err));
+        }
+
+        const ask_admin_role = () => {
+            fetch('/ask_admin_role', {
+                method: 'POST',
+            }).then(
+                async res => alert(await res.text())
+            ).catch(err => console.error(err));
+        }
+    </script>
+</body>
+
+</html>

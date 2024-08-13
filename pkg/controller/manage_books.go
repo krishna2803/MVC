@@ -2,11 +2,15 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"mvc/pkg/auth"
 	"mvc/pkg/database"
 	"mvc/pkg/types"
 	"net/http"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 func AddDummyBookData() {
@@ -49,7 +53,22 @@ func ManageBooks(w http.ResponseWriter, r *http.Request) {
 		var books []types.APIBook
 		database.DB.Model(&types.Book{}).Find(&books)
 
-		t.Execute(w, books)
+		cookie, _ := r.Cookie("token")
+		user, err := auth.DecodeJWT(cookie.Value)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
+		data := struct {
+			Books []types.APIBook
+			User  auth.JWTClaims
+		}{
+			Books: books,
+			User:  user,
+		}
+
+		t.Execute(w, data)
 		return
 	}
 }
@@ -65,12 +84,12 @@ func AddBook(w http.ResponseWriter, r *http.Request) {
 		count_s := r.FormValue("count")
 		count, err := strconv.ParseInt(count_s, 10, 64)
 		if err != nil || count <= 0 {
-			http.Error(w, "count should be a positive integer!", http.StatusInternalServerError)
+			http.Error(w, "Count should be a positive integer!", http.StatusInternalServerError)
 			return
 		}
 
 		if count > 10000 {
-			http.Error(w, "can't add too many books at once!", http.StatusInternalServerError)
+			http.Error(w, "Can't add too many books at once!", http.StatusInternalServerError)
 		}
 
 		book := types.Book{
@@ -83,25 +102,39 @@ func AddBook(w http.ResponseWriter, r *http.Request) {
 		}
 
 		database.DB.Create(&book)
+		fmt.Fprint(w, "Book added successfully!")
 	}
 }
 
-func RemoveBook(w http.ResponseWriter, r *http.Request) {
+func RemoveBooks(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		err := r.ParseForm()
+		r.ParseForm()
+
+		id := r.FormValue("id")
+		var str_ids []string
+		err := json.Unmarshal([]byte(id), &str_ids)
+		if err != nil {
+			http.Error(w, "Invalid book ids!", http.StatusInternalServerError)
+			return
+		}
+
+		var ids []int
+		for _, str_id := range str_ids {
+			id, err := strconv.ParseInt(str_id, 10, 64)
+			if err != nil || id <= 0 {
+				http.Error(w, "Invalid book ids!", http.StatusInternalServerError)
+				return
+			}
+			ids = append(ids, int(id))
+		}
+
+		err = database.DB.Where("id IN (?)", ids).Delete(&types.Book{}).Error
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
 		}
 
-		id_s := r.FormValue("id")
-		id, err := strconv.ParseInt(id_s, 10, 64)
-		if err != nil || id <= 0 {
-			http.Error(w, "invalid book id!", http.StatusInternalServerError)
-			return
-		}
-
-		database.DB.Delete(&types.Book{}, id)
+		fmt.Fprint(w, "Book(s) removed successfully!")
 	}
 }
 
@@ -128,20 +161,23 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		summary := r.FormValue("summary")
 		count, err := strconv.ParseInt(count_s, 10, 64)
 		if err != nil || count < 0 {
-			http.Error(w, "count should be a positive integer!", http.StatusInternalServerError)
+			http.Error(w, "Count should be a positive integer!", http.StatusInternalServerError)
 			return
 		}
 
 		if count > 10000 {
-			http.Error(w, "can't add too many books at once!", http.StatusInternalServerError)
+			http.Error(w, "Can't add too many books at once!", http.StatusInternalServerError)
+			return
 		}
 
 		if count == 0 {
 			database.DB.Delete(&types.Book{}, id)
+			fmt.Fprint(w, "Count was set to 0. Book remove successfully!")
 			return
 		}
 
 		book := types.Book{
+			Model:    gorm.Model{ID: uint(id)},
 			Title:    title,
 			Author:   author,
 			Genre:    genre,
@@ -155,5 +191,6 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
 		}
+		fmt.Fprint(w, "Book updated successfully!")
 	}
 }
