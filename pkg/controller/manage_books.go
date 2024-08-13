@@ -150,7 +150,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 			Count:    int(count),
 		}
 
-		err = database.DB.Model(&types.Book{}).Where("id = ?", id).Updates(book).Error
+		err = database.DB.Save(&book).Error
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return

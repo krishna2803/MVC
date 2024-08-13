@@ -97,9 +97,6 @@ func AuthenticateSelfAndAdmin(next http.HandlerFunc) http.HandlerFunc {
 				http.Error(w, "You are not authorized to access this page", http.StatusForbidden)
 				return
 			}
-
-			http.Error(w, "You are not authorized to access this page", http.StatusForbidden)
-			return
 		}
 
 		next(w, r)

@@ -8,6 +8,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
@@ -20,7 +21,10 @@ func connect() (*gorm.DB, error) {
 	db_name := os.Getenv("DB_NAME")
 
 	dsn := fmt.Sprintf("host=localhost user=%s password=%s dbname=%s sslmode=disable", db_user, db_pass, db_name)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		// disable annoying not found errors
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}

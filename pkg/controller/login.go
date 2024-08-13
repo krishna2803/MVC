@@ -46,9 +46,17 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		var user types.User
 		if is_phone {
-			database.DB.First(&user, "phone = ?", creds)
+			err := database.DB.First(&user, "phone = ?", creds).Error
+			if err != nil {
+				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+				return
+			}
 		} else {
-			database.DB.First(&user, "email = ?", creds)
+			err := database.DB.First(&user, "email = ?", creds).Error
+			if err != nil {
+				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		logged_in, err := auth.VerifyHash(password, user.Password)

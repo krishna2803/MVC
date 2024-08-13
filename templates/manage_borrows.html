@@ -6,6 +6,37 @@
     <title>Borrow History</title>
 </head>
 <body>
-    
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Book Title</th>
+                <th>Book Author</th>
+                <th>Requestee Name</th>
+                <th>Requestee Phone</th>
+                <th>Requestee Email</th>
+                <th>Available Count</th>
+                <th>Requested On</th>
+                <th>Returned On</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range . }}
+            <tr>
+                <td><input type="checkbox" name="borrow" value="{{ .ID }}"></td>
+                <td>{{ .Title }}</td>
+                <td>{{ .Author }}</td>
+                <td>{{ .Name }}</td>
+                <td>{{ .Phone }}</td>
+                <td>{{ .Email }}</td>
+                <td>{{ .Count }}</td>
+                <td>{{ .BorrowedAt }}</td>
+                <td>{{ .ReturnedAt }}</td>
+                <td>{{ .Status }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
 </body>
 </html>

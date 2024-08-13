@@ -69,7 +69,7 @@ func CheckAdmin(tokenString string) (bool, error) {
 	}
 
 	if claims.Role != "admin" {
-		return false, fmt.Errorf("not an admin")
+		return false, nil
 	}
 
 	return true, nil

@@ -34,6 +34,7 @@ type User struct {
 	Email    string `json:"email" gorm:"unique; not null; type:varchar(255)"`
 	Address  string `json:"address" gorm:"not null"`
 	Role     string `json:"role" gorm:"default:user; not null"` // user, admin
+	AdminReq string `json:"admin_req" gorm:"default:null;"`     // null, pending, approved, denied
 }
 
 type APIUser struct {
@@ -51,8 +52,8 @@ type Borrow struct {
 	UserID     uint      `json:"user_id" gorm:"not null"`
 	Status     string    `json:"status" gorm:"default:pending; not null"` // pending','approved','denied','returned
 	Count      int       `json:"count" gorm:"not null"`                   // count of book when it was borrowed
-	BorrowedAt time.Time `json:"borrowed_at" gorm:"type: timestamp; default: current_timestamp"`
-	ReturnedAt time.Time `json:"returned_at" gorm:"not null; type: timestamp"`
+	BorrowedAt time.Time `json:"borrowed_at" gorm:"type: timestamp; default: null"`
+	ReturnedAt time.Time `json:"returned_at" gorm:"type: timestamp; default: null"`
 	Book       Book
 	User       User
 }

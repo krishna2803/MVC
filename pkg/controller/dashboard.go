@@ -21,6 +21,10 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, nil)
 			return
 		}
+		if !isAdmin && err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
 
 		t := template.Must(template.ParseFiles("templates/userdashboard.html"))
 		t.Execute(w, nil)
