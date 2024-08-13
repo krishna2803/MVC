@@ -3,9 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History</title>
+    <title>Borrow History</title>
 </head>
 <body>
-    
+    <h1>Borrow History</h1>
+    <button onclick="window.location.href = '/'">Back</button>
+    <button id="return-btn" onclick="returnSelectedBooks()">Return Selected Books</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Borrowed On</th>
+                <th>Returned On</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ range . }}
+            <tr>
+                <td><input type="checkbox" name="borrow" value="{{ .ID }}" {{ if ne .Status "approved" }}disabled{{ end }}></td>
+                <td>{{ .Title }}</td>
+                <td>{{ .Author }}</td>
+                <td>{{ .BorrowedAt }}</td>
+                <td>{{ .ReturnedAt }}</td>
+                <td>{{ .Status }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+    <script>
+        const returnButton = document.getElementById('return-btn');
+
+        const returnSelectedBooks = () => {
+            const selectedBooks = document.querySelectorAll('input[name="borrow"]:checked');
+
+            if (selectedBooks.length === 0) {
+                alert('Please select at least one book to return.');
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
+
+            fetch('/return_books', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData,
+            }).then(async res => {
+                if (res.ok) {
+                    alert(await res.text());
+                    window.location.reload();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

@@ -7,7 +7,8 @@
 </head>
 <body>
     <h1>User Management</h1>
-
+    <button onclick="window.location.href = '/'">Back</button>
+    <button id="delete-btn" onclick="deleteSelectedUsers()">Delete Selected Users</button>
     <table>
         <thead>
             <tr>
@@ -31,5 +32,33 @@
             </tr>
             {{ end }}
     </table>
+    <script>
+        const deleteSelectedUsers = () => {
+            const selectedUsers = document.querySelectorAll('input[name="user"]:checked');
+
+            if (selectedUsers.length === 0) {
+                alert('Please select at least one user to delete.');
+                return;
+            }
+
+            let formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedUsers).map(checkbox => checkbox.value)));
+
+            fetch('/remove_users', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData,
+            }).then(async res => {
+                if (res.ok) {
+                    alert(await res.text());
+                    window.location.reload();
+                }
+            }).catch(err => {
+                console.error(err);
+            });
+        }
+    </script>
 </body>
 </html>

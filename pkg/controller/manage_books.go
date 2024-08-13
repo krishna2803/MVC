@@ -92,12 +92,58 @@ func AddBook(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Can't add too many books at once!", http.StatusInternalServerError)
 		}
 
+		title := r.FormValue("title")
+		author := r.FormValue("author")
+		genre := r.FormValue("genre")
+		language := r.FormValue("language")
+		summary := r.FormValue("summary")
+
+		if len(title) <= 1 {
+			http.Error(w, "Title too short!", http.StatusInternalServerError)
+			return
+		} else if len(title) >= 250 {
+			http.Error(w, "Title too long!", http.StatusInternalServerError)
+			return
+		}
+
+		if len(author) <= 1 {
+			http.Error(w, "Author too short!", http.StatusInternalServerError)
+			return
+		} else if len(author) >= 250 {
+			http.Error(w, "Author too long!", http.StatusInternalServerError)
+			return
+		}
+
+		if len(genre) <= 1 {
+			http.Error(w, "Genre too short!", http.StatusInternalServerError)
+			return
+		} else if len(genre) >= 250 {
+			http.Error(w, "Genre too long!", http.StatusInternalServerError)
+			return
+		}
+
+		if len(language) <= 1 {
+			http.Error(w, "Language too short!", http.StatusInternalServerError)
+			return
+		} else if len(language) >= 250 {
+			http.Error(w, "Language too long!", http.StatusInternalServerError)
+			return
+		}
+
+		if len(summary) <= 1 {
+			http.Error(w, "Summary too short!", http.StatusInternalServerError)
+			return
+		} else if len(summary) >= 250 {
+			http.Error(w, "Summary too long!", http.StatusInternalServerError)
+			return
+		}
+
 		book := types.Book{
-			Title:    r.FormValue("name"),
-			Author:   r.FormValue("author"),
-			Genre:    r.FormValue("genre"),
-			Language: r.FormValue("language"),
-			Summary:  r.FormValue("summary"),
+			Title:    title,
+			Author:   author,
+			Genre:    genre,
+			Language: language,
+			Summary:  summary,
 			Count:    int(count),
 		}
 

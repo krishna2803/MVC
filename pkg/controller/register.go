@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"fmt"
 	"html/template"
 	"mvc/pkg/auth"
 	"mvc/pkg/database"
 	"mvc/pkg/types"
 	"net/http"
+	"net/mail"
+	"unicode"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -25,12 +26,43 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		address := r.FormValue("address")
 
 		if len(password) < 8 {
-			http.Error(w, "password should be atleast 8 characters", http.StatusBadRequest)
+			http.Error(w, "Password should be atleast 8 characters", http.StatusBadRequest)
 			return
 		}
 
 		if password != confpass {
-			http.Error(w, "password and confirm password should be same", http.StatusBadRequest)
+			http.Error(w, "Password and confirm password should match", http.StatusBadRequest)
+			return
+		}
+
+		if len(phone) != 10 {
+			http.Error(w, "Phone number should be of 10 digits", http.StatusBadRequest)
+			return
+		}
+
+		for _, char := range phone {
+			if !unicode.IsDigit(char) {
+				http.Error(w, "Phone number should contain only digits", http.StatusBadRequest)
+				return
+			}
+		}
+
+		if len(username) < 3 {
+			http.Error(w, "Username too short", http.StatusBadRequest)
+			return
+		} else if len(username) > 50 {
+			http.Error(w, "Username too long", http.StatusBadRequest)
+			return
+		}
+
+		_, err = mail.ParseAddress(email)
+		if err != nil {
+			http.Error(w, "Invalid email", http.StatusBadRequest)
+			return
+		}
+
+		if len(address) < 4 {
+			http.Error(w, "Address too short", http.StatusBadRequest)
 			return
 		}
 
@@ -47,9 +79,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			Password: hash,
 			Address:  address,
 		}
-		fmt.Printf("%+v\n", user)
-
-		// save user to database
 		database.DB.Create(&user)
 
 		http.Redirect(w, r, "/login", http.StatusSeeOther)

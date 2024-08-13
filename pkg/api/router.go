@@ -26,15 +26,23 @@ func Start() {
 	http.Handle("/get_borrows", middleware.Authenticate(http.HandlerFunc(controller.GetBorrows)))
 	http.Handle("/borrows", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ManageBorrows)))
 	http.Handle("/borrow_books", middleware.Authenticate(http.HandlerFunc(controller.BorrowBooks)))
+	http.Handle("/approve_borrows", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ApproveBorrows)))
+	http.Handle("/deny_borrows", middleware.AuthenticateAdmin(http.HandlerFunc(controller.DenyBorrows)))
+	http.Handle("/return_books", middleware.Authenticate(http.HandlerFunc(controller.ReturnBooks)))
 
 	// users
 	http.Handle("/get_users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.GetUsers)))
-	http.Handle("/remove_user", middleware.AuthenticateAdmin(http.HandlerFunc(controller.RemoveUser)))
+	http.Handle("/remove_users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.RemoveUsers)))
 	http.Handle("/update_user", middleware.AuthenticateSelfAndAdmin(http.HandlerFunc(controller.UpdateUser)))
 	http.Handle("/users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ManageUsers)))
 	http.Handle("/admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ManageAdminRequests)))
+	http.Handle("/make_admin_request", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ApproveAdminRequests)))
+	http.Handle("/approve_admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ApproveAdminRequests)))
+	http.Handle("/deny_admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.DenyAdminRequests)))
 
-	http.Handle("/profile", middleware.Authenticate(http.HandlerFunc(controller.UserProfile)))
+	// user specific
+	http.Handle("/profile", middleware.Authenticate(http.HandlerFunc(controller.ManageUserProfile)))
+	http.Handle("/history", middleware.Authenticate(http.HandlerFunc(controller.ManageHistory)))
 
 	// ping
 	http.Handle("/ping", http.HandlerFunc(controller.Ping))

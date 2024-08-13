@@ -1,21 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body,
+        html {
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .register-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            border: 1px solid #ced4da;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+
+        #register-btn {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            margin-top: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        #register-btn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        a {
+            display: block;
+            margin-top: 1rem;
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #0056b3;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Register</h1>
+    <div class="register-container">
+        <h1>Register</h1>
         <form action="/register" method="POST">
-            <input type="text" name="username" id="name" placeholder="Name" required>
-            <input type="tel" pattern="[0-9]{10}" name="phone" id="phone" placeholder="Phone" required>
-            <input type="email" name="email" id="email" placeholder="Email" required>
-            <input type="password" name="password" id="password" placeholder="Password" required>
-            <input type="password" name="confpass" id="confpass" placeholder="Confirm Password" required>
-            <input type="text" name="address" id="address" placeholder="Address" required>
-            <button type="submit">Register</button>
+            <input id="username" type="text" name="username" placeholder="Name" required>
+            <input id="phone" type="tel" pattern="[0-9]{10}" name="phone" placeholder="Phone" required>
+            <input id="email" type="email" name="email" placeholder="Email" required>
+            <input id="password" type="password" name="password" placeholder="Password" required>
+            <input id="confpass" type="password" name="confpass" placeholder="Confirm Password" required>
+            <input id="address" type="text" name="address" placeholder="Address" required>
+            <button id="register-btn" type="button" onclick="register()">Register</button>
         </form>
         <a href="/login">Already registered? Login here</a>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const container = document.querySelector('.register-container');
+            container.style.opacity = 0;
+            container.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                container.style.opacity = 1;
+                container.style.transform = 'scale(1)';
+            }, 100);
+        });
+
+        const register = () => {
+            const username = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confpass = document.getElementById('confpass').value;
+            const address = document.getElementById('address').value;
+
+            if (password !== confpass) {
+                alert('Passwords do not match.');
+                return;
+            }
+
+            let formData = new URLSearchParams();
+            formData.append('username', username);
+            formData.append('phone', phone);
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('confpass', confpass);
+            formData.append('address', address);
+
+            fetch('/register', {
+                method: 'POST',
+                body: formData
+            }).then(async res => {
+                if (res.ok) {
+                    window.location.href = '/login';
+                } else {
+                    alert(await res.text());
+                }
+            });
+        }
+    </script>
 </body>
+
 </html>

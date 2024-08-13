@@ -8,10 +8,8 @@
 </head>
 
 <body>
-    <p>
     <h1>Book Management</h1>
-    </p>
-
+    <button onclick="window.location.href = '/'">Back</button>
     {{ if eq .User.Role "admin" }}
     <h1>Add a book</h1>
     <div id="add-book-modal">
@@ -172,7 +170,9 @@
     </script>
     {{ end }}
 
+    {{ if eq .User.Role "user" }}
     <button id="req-btn" onclick="requestSelectedBooks()" disabled>Request Selected Books</button>
+    {{ end }}
 
     <table>
         <thead>

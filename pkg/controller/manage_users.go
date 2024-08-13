@@ -8,6 +8,7 @@ import (
 	"mvc/pkg/database"
 	"mvc/pkg/types"
 	"net/http"
+	"strconv"
 	"unicode"
 )
 
@@ -48,7 +49,6 @@ func ManageUsers(w http.ResponseWriter, r *http.Request) {
 
 		err = t.Execute(w, users)
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
 		}
@@ -71,15 +71,103 @@ func ManageAdminRequests(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func RemoveUser(w http.ResponseWriter, r *http.Request) {
+func MakeAdminRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		r.ParseForm()
 		id := r.FormValue("id")
-		database.DB.Delete(&types.User{}, id)
+		user := types.User{}
+		err := database.DB.First(&user, id).Error
+		if err != nil {
+			http.Error(w, "Invalid user id!", http.StatusInternalServerError)
+			return
+		}
+		user.Role = "admin"
+		user.AdminReq = "pending"
+		database.DB.Save(&user)
 	}
 }
 
-func UserProfile(w http.ResponseWriter, r *http.Request) {
+func ApproveAdminRequests(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		id := r.FormValue("id")
+		var str_ids []string
+		err := json.Unmarshal([]byte(id), &str_ids)
+		if err != nil {
+			http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+			return
+		}
+
+		var ids []int64
+		for _, str_id := range str_ids {
+			id, err := strconv.ParseInt(str_id, 10, 64)
+			if err != nil || id <= 0 {
+				http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+				return
+			}
+			ids = append(ids, id)
+		}
+
+		database.DB.Where("id IN (?)", ids).Updates(map[string]interface{}{"role": "admin", "admin_req": "approved"})
+
+		fmt.Fprintf(w, "%d Admin request(s) approved successfully!", len(ids))
+	}
+}
+
+func DenyAdminRequests(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		id := r.FormValue("id")
+		var str_ids []string
+		err := json.Unmarshal([]byte(id), &str_ids)
+		if err != nil {
+			http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+			return
+		}
+
+		var ids []int64
+		for _, str_id := range str_ids {
+			id, err := strconv.ParseInt(str_id, 10, 64)
+			if err != nil || id <= 0 {
+				http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+				return
+			}
+			ids = append(ids, id)
+		}
+
+		database.DB.Where("id IN (?)", ids).Update("admin_req", "denied")
+
+		fmt.Fprintf(w, "%d Admin request(s) approved successfully!", len(ids))
+	}
+}
+
+func RemoveUsers(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		id := r.FormValue("id")
+		var str_ids []string
+		err := json.Unmarshal([]byte(id), &str_ids)
+		if err != nil {
+			http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+			return
+		}
+
+		var ids []int64
+		for _, str_id := range str_ids {
+			id, err := strconv.ParseInt(str_id, 10, 64)
+			if err != nil || id <= 0 {
+				http.Error(w, "Invalid user ids!", http.StatusInternalServerError)
+				return
+			}
+			ids = append(ids, id)
+		}
+
+		database.DB.Where("id IN (?)", ids).Delete(&types.User{})
+		fmt.Fprintf(w, "%d User(s) removed successfully!", len(ids))
+	}
+}
+
+func ManageUserProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t := template.Must(template.ParseFiles("templates/user_profile.html"))
 
@@ -149,5 +237,28 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Fprintf(w, "User updated successfully!")
+	}
+}
+
+func ManageHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		borrows, err := getUserBorrows(cookie)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
+		t := template.Must(template.ParseFiles("templates/history.html"))
+		err = t.Execute(w, borrows)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
 	}
 }

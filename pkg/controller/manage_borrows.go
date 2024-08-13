@@ -40,7 +40,7 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, err := auth.DecodeJWT(cookie.Value)
+		logged_in_user, err := auth.DecodeJWT(cookie.Value)
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
@@ -55,11 +55,14 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			var user types.User
+			database.DB.First(&user, logged_in_user.UserID)
+
 			borrow := types.Borrow{
-				BookID: uint(id),
-				UserID: user.UserID,
 				Count:  book.Count,
 				Status: "pending",
+				Book:   book,
+				User:   user,
 			}
 
 			database.DB.Create(&borrow)
@@ -104,6 +107,32 @@ func GetBorrows(w http.ResponseWriter, r *http.Request) {
 		borrows := getBorrows()
 		json.NewEncoder(w).Encode(borrows)
 	}
+}
+
+func getUserBorrows(cookie *http.Cookie) ([]map[string]interface{}, error) {
+	user, err := auth.DecodeJWT(cookie.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	api_borrows := []types.Borrow{}
+	database.DB.Where("user_id = ?", user.UserID).Find(&api_borrows)
+
+	borrows := make([]map[string]interface{}, 0)
+	for _, borrow := range api_borrows {
+		var book types.APIBook
+		database.DB.Model(&types.Book{}).First(&book, borrow.BookID)
+
+		borrows = append(borrows, map[string]interface{}{
+			"ID":         borrow.ID,
+			"Title":      book.Title,
+			"Author":     book.Author,
+			"BorrowedAt": borrow.BorrowedAt,
+			"ReturnedAt": borrow.ReturnedAt,
+			"Status":     borrow.Status,
+		})
+	}
+	return borrows, nil
 }
 
 func ManageBorrows(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +257,7 @@ func ReturnBooks(w http.ResponseWriter, r *http.Request) {
 
 		for _, id := range ids {
 			borrow := types.Borrow{}
-			database.DB.Find(&borrow, id).Where("user_id = ?", user.UserID)
+			database.DB.Where("user_id = ?", user.UserID).First(&borrow, id)
 
 			borrow.Status = "returned"
 			borrow.ReturnedAt = time.Now()

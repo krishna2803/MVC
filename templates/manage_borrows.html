@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Borrow History</title>
+    <title>Borrow Request History</title>
 </head>
+
 <body>
+    <h1>Borrow Request History</h1>
+    <button onclick="window.location.href = '/'">Back</button>
+    <button id="approve-btn" onclick="approveSelectedRequests()">Approve Selected Requests</button>
+    <button id="deny-btn" onclick="denySelectedRequests()">Deny Selected Requests</button>
     <table>
         <thead>
             <tr>
@@ -24,19 +30,88 @@
         <tbody>
             {{ range . }}
             <tr>
-                <td><input type="checkbox" name="borrow" value="{{ .ID }}"></td>
+                <td><input type="checkbox" name="borrow" value="{{ .ID }}" {{ if ne .Status "pending"}}disabled{{ end }}></td>
                 <td>{{ .Title }}</td>
                 <td>{{ .Author }}</td>
                 <td>{{ .Name }}</td>
                 <td>{{ .Phone }}</td>
                 <td>{{ .Email }}</td>
                 <td>{{ .Count }}</td>
-                <td>{{ .BorrowedAt }}</td>
-                <td>{{ .ReturnedAt }}</td>
+                <td>
+                    {{ if or (eq .Status "approved") (eq .Status "returned") }}
+                    {{ .BorrowedAt }}
+                    {{ else }}
+                    -
+                    {{ end}}
+                </td>
+                <td>
+                    {{ if ne .Status "returned" }}
+                    -
+                    {{ else }}
+                    {{ .ReturnedAt }}
+                    {{ end}}
+                </td>
                 <td>{{ .Status }}</td>
             </tr>
             {{ end }}
         </tbody>
     </table>
+    <script>
+        const checkboxes = document.querySelectorAll('input[name="borrow"');
+        const approveButton = document.getElementById('approve-btn');
+        const denyButton = document.getElementById('deny-btn');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('input[name="borrow"]:checked').length;
+                if (approveButton)
+                    approveButton.disabled = selectedCount === 0;
+                if (denyButton)
+                    approveButton.disabled = selectedCount === 0;
+            });
+        });
+
+        const approveSelectedRequests = () => {
+            const selectedBooks = document.querySelectorAll('input[name="borrow"]:checked');
+
+            const formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
+
+            fetch('/approve_borrows', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData
+            }).then(
+                async res => {
+                    alert(await res.text())
+                    window.location.reload()
+                }
+            ).catch(err => console.error(err));
+        }
+
+        const denySelectedRequests = () => {
+            const selectedBooks = document.querySelectorAll('input[name="borrow"]:checked');
+
+            const formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedBooks).map(checkbox => checkbox.value)));
+
+            fetch('/deny_borrows', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData
+            }).then(
+                async res => {
+                    alert(await res.text())
+                    window.location.reload()
+                }
+            ).catch(err => console.error(err));
+        }
+    </script>
 </body>
+
 </html>
