@@ -6,71 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile | {{ .Username }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #e3f2fd;
-            inset: 0;
-        }
-
-        .container {
-            background-color: #ffffff;
-            border-radius: 1rem;
-            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
-            max-width: 100%;
-            width: 25rem;
-            margin-top: 10rem;
-            animation: fadeIn 1s ease;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 2.5rem;
-            color: #1e88e5;
-            margin-bottom: 1rem;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            margin-top: 0.5rem;
-            font-weight: bold;
-            color: #495057;
-        }
-
-        input {
-            margin-bottom: 1rem;
-            border-radius: 0.75rem;
-            height: 2.75rem;
-        }
-
-        button {
-            margin-top: 0.5rem;
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.75rem;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/public/user_profile.css">
 </head>
 
 <body>
@@ -79,20 +15,29 @@
         <form id="profile_form" method="POST">
             <h1>User Profile</h1>
             <label for="username">Name:</label>
-            <input class="form-control" type="text" id="username" name="username" value="{{ .Username }}" disabled required>
+            <input class="form-control" type="text" id="username" name="username" value="{{ .Username }}" disabled
+                required>
             <label for="email">Email:</label>
             <input class="form-control" type="email" id="email" name="email" value="{{ .Email }}" disabled required>
             <label for="phone">Phone:</label>
             <input class="form-control" type="tel" id="phone" name="phone" value="{{ .Phone }}" disabled required>
             <label for="address">Address:</label>
-            <input class="form-control" type="text" id="address" name="address" value="{{ .Address }}" disabled required>
-            <label for="password">Password:</label>
-            <input class="form-control" type="password" id="password" name="password">
+            <input class="form-control" type="text" id="address" name="address" value="{{ .Address }}" disabled
+                required>
+
+            <label for="password" hidden>Current Password:</label>
+            <input class="form-control" type="password" id="password" name="password" hidden>
+            <label for="newpass" hidden>New Password:</label>
+            <input class="form-control" type="password" id="newpass" name="newpass"
+                placeholder="Leave blank for no change" hidden>
+            <label for="confpass" hidden>Confirm New Password:</label>
+            <input class="form-control" type="password" id="confpass" name="confpass" hidden>
 
             <button id="edit-btn" class="btn btn-primary" type="button" onclick="toggleEdit()">Edit Details</button>
-            <button id="submit-btn" class="btn btn-success" type="button" onclick="updateProfile()" disabled>Submit</button>
+            <button id="submit-btn" class="btn btn-success" type="button" onclick="updateProfile()"
+                disabled>Submit</button>
         </form>
-        <button id="ask-admin-btn" class="btn btn-warning">Ask for Admin Role</button>
+        <button id="ask-admin-btn" onclick="requestForAdminRole()" class="btn btn-warning">Ask for Admin Role</button>
         <button id="logout-btn" class="btn btn-danger">Logout</button>
     </div>
 
@@ -107,13 +52,30 @@
             });
         });
 
+        document.getElementById('newpass').addEventListener('input', () => {
+            const len = document.getElementById('newpass').value.length;
+            if (len > 0) {
+                document.getElementById('confpass').hidden = false;
+                document.querySelector('label[for="confpass"]').hidden = false;
+            } else {
+                document.getElementById('confpass').hidden = true;
+                document.querySelector('label[for="confpass"]').hidden = true;
+            }
+        });
+
         const toggleEdit = () => {
-            document.getElementById("submit-btn").disabled = false;
+            document.getElementById('submit-btn').disabled = false;
             document.getElementById('edit-btn').style.display = "none";
             document.getElementById('username').disabled = false;
             document.getElementById('email').disabled = false;
             document.getElementById('phone').disabled = false;
             document.getElementById('address').disabled = false;
+
+            document.getElementById('password').hidden = false;
+            document.querySelector('label[for="password"]').hidden = false;
+
+            document.getElementById('newpass').hidden = false;
+            document.querySelector('label[for="newpass"]').hidden = false;
         }
 
         const updateProfile = () => {
@@ -122,6 +84,13 @@
             const phone = document.getElementById('phone').value;
             const address = document.getElementById('address').value;
             const password = document.getElementById('password').value;
+            const newpass = document.getElementById('newpass').value;
+            const confpass = document.getElementById('confpass').value;
+
+            if (newpass !== confpass) {
+                alert('Passwords do not match!');
+                return;
+            }
 
             let formData = new URLSearchParams();
             formData.append('username', username);
@@ -129,6 +98,7 @@
             formData.append('phone', phone);
             formData.append('address', address);
             formData.append('password', password);
+            formData.append('newpass', newpass);
 
             fetch('/update_user', {
                 method: 'POST',
@@ -137,12 +107,18 @@
                 },
                 body: formData
             }).then(
-                async res => alert(await res.text())
+                async res => {
+                    alert(await res.text());
+                    if (res.ok) {
+                        window.location.reload();
+                    }
+                }
             ).catch(err => console.error(err));
         }
 
         const requestForAdminRole = () => {
-            fetch('/requestAdminRole', {
+            const formData = new URLSearchParams();
+            fetch('/make_admin_request', {
                 method: 'POST',
             }).then(
                 async res => alert(await res.text())

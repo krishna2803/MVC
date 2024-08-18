@@ -24,6 +24,9 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var borrowed_ids []int64
+		database.DB.Where("status = ?", "pending").Model(&types.Borrow{}).Pluck("book_id", &borrowed_ids)
+
 		var ids []int64
 		for _, str_id := range str_ids {
 			id, err := strconv.ParseInt(str_id, 10, 64)
@@ -31,7 +34,21 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Invalid book ids!", http.StatusInternalServerError)
 				return
 			}
-			ids = append(ids, id)
+			skip := false
+			for _, borrowed_id := range borrowed_ids {
+				if id == borrowed_id {
+					skip = true
+					break
+				}
+			}
+			if !skip {
+				ids = append(ids, id)
+			}
+		}
+
+		if len(ids) == 0 {
+			http.Error(w, "All books were already borrowed!", http.StatusInternalServerError)
+			return
 		}
 
 		cookie, err := r.Cookie("token")
@@ -51,8 +68,8 @@ func BorrowBooks(w http.ResponseWriter, r *http.Request) {
 			database.DB.First(&book, id)
 
 			if book.Count <= 0 {
-				http.Error(w, "Book(s) out of stock!", http.StatusInternalServerError)
-				return
+				http.Error(w, "Some Book(s) out of stock!\n", http.StatusInternalServerError)
+				continue
 			}
 
 			var user types.User
@@ -80,10 +97,10 @@ func getBorrows() []map[string]interface{} {
 	borrows := make([]map[string]interface{}, 0)
 	for _, borrow := range api_borrows {
 		var book types.APIBook
-		database.DB.Model(&types.Book{}).First(&book, borrow.BookID)
+		database.DB.Unscoped().Model(&types.Book{}).First(&book, borrow.BookID)
 
 		var user types.APIUser
-		database.DB.Model(&types.User{}).First(&user, borrow.UserID)
+		database.DB.Unscoped().Model(&types.User{}).First(&user, borrow.UserID)
 
 		borrows = append(borrows, map[string]interface{}{
 			"ID":         borrow.ID,
@@ -94,8 +111,8 @@ func getBorrows() []map[string]interface{} {
 			"Email":      user.Email,
 			"Address":    user.Address,
 			"Count":      book.Count,
-			"BorrowedAt": borrow.BorrowedAt,
-			"ReturnedAt": borrow.ReturnedAt,
+			"BorrowedAt": borrow.BorrowedAt.Format(time.RFC822),
+			"ReturnedAt": borrow.ReturnedAt.Format(time.RFC822),
 			"Status":     borrow.Status,
 		})
 	}
@@ -121,14 +138,14 @@ func getUserBorrows(cookie *http.Cookie) ([]map[string]interface{}, error) {
 	borrows := make([]map[string]interface{}, 0)
 	for _, borrow := range api_borrows {
 		var book types.APIBook
-		database.DB.Model(&types.Book{}).First(&book, borrow.BookID)
+		database.DB.Unscoped().Model(&types.Book{}).First(&book, borrow.BookID)
 
 		borrows = append(borrows, map[string]interface{}{
 			"ID":         borrow.ID,
 			"Title":      book.Title,
 			"Author":     book.Author,
-			"BorrowedAt": borrow.BorrowedAt,
-			"ReturnedAt": borrow.ReturnedAt,
+			"BorrowedAt": borrow.BorrowedAt.Format(time.RFC822),
+			"ReturnedAt": borrow.ReturnedAt.Format(time.RFC822),
 			"Status":     borrow.Status,
 		})
 	}
@@ -153,6 +170,11 @@ func ApproveBorrows(w http.ResponseWriter, r *http.Request) {
 		err := json.Unmarshal([]byte(id), &str_ids)
 		if err != nil {
 			http.Error(w, "Invalid borrow ids!", http.StatusInternalServerError)
+			return
+		}
+
+		if len(str_ids) == 0 {
+			http.Error(w, "No borrow ids provided!", http.StatusInternalServerError)
 			return
 		}
 

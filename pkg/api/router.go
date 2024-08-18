@@ -10,6 +10,8 @@ import (
 func Start() {
 	http.Handle("/", middleware.Authenticate(http.HandlerFunc(controller.Dashboard)))
 
+	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("./public"))))
+
 	// authentication
 	http.Handle("/login", http.HandlerFunc(controller.Login))
 	http.Handle("/register", http.HandlerFunc(controller.Register))
@@ -33,10 +35,10 @@ func Start() {
 	// users
 	http.Handle("/get_users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.GetUsers)))
 	http.Handle("/remove_users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.RemoveUsers)))
-	http.Handle("/update_user", middleware.AuthenticateSelfAndAdmin(http.HandlerFunc(controller.UpdateUser)))
+	http.Handle("/update_user", middleware.Authenticate(http.HandlerFunc(controller.UpdateUser)))
 	http.Handle("/users", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ManageUsers)))
 	http.Handle("/admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ManageAdminRequests)))
-	http.Handle("/make_admin_request", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ApproveAdminRequests)))
+	http.Handle("/make_admin_request", middleware.Authenticate(http.HandlerFunc(controller.MakeAdminRequest)))
 	http.Handle("/approve_admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.ApproveAdminRequests)))
 	http.Handle("/deny_admin_requests", middleware.AuthenticateAdmin(http.HandlerFunc(controller.DenyAdminRequests)))
 

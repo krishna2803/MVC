@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"html/template"
 	"mvc/pkg/auth"
 	"mvc/pkg/database"
@@ -72,6 +73,18 @@ func Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		var temp_user types.User
+		database.DB.First(&temp_user, "phone = ?", phone)
+		if temp_user.ID != 0 {
+			http.Error(w, "Phone number already taken", http.StatusBadRequest)
+			return
+		}
+		database.DB.First(&temp_user, "email = ?", email)
+		if temp_user.ID != 0 {
+			http.Error(w, "Email already taken", http.StatusBadRequest)
+			return
+		}
+
 		user := types.User{
 			Username: username,
 			Phone:    phone,
@@ -81,7 +94,20 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		}
 		database.DB.Create(&user)
 
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		token, err := auth.CreateJWT(user)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:  "token",
+			Value: token,
+			Path:  "/",
+		})
+
+		fmt.Fprintf(w, "User successfully registered!")
+
 		return
 	}
 

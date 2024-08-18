@@ -8,6 +8,7 @@ import (
 	"mvc/pkg/database"
 	"mvc/pkg/types"
 	"net/http"
+	"net/mail"
 	"strconv"
 	"unicode"
 )
@@ -60,8 +61,7 @@ func ManageAdminRequests(w http.ResponseWriter, r *http.Request) {
 		t := template.Must(template.ParseFiles("templates/admin_requests.html"))
 
 		var users []types.User
-		database.DB.Find(&users, "role <> ?", "null")
-		database.DB.Model(&types.User{}).Where("role = ?", "pending").Find(&users)
+		database.DB.Model(&types.User{}).Where("admin_req <> ?", "null").Find(&users)
 
 		err := t.Execute(w, users)
 		if err != nil {
@@ -73,17 +73,35 @@ func ManageAdminRequests(w http.ResponseWriter, r *http.Request) {
 
 func MakeAdminRequest(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		r.ParseForm()
-		id := r.FormValue("id")
+		token, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+		decoded, err := auth.DecodeJWT(token.Value)
+		if err != nil {
+			http.Error(w, "Some error occured", http.StatusInternalServerError)
+			return
+		}
+		id := decoded.UserID
 		user := types.User{}
-		err := database.DB.First(&user, id).Error
+		err = database.DB.First(&user, id).Error
 		if err != nil {
 			http.Error(w, "Invalid user id!", http.StatusInternalServerError)
 			return
 		}
-		user.Role = "admin"
+		if user.AdminReq == "pending" {
+			fmt.Fprintf(w, "Admin request pending.")
+			return
+		} else if user.AdminReq == "denied" {
+			fmt.Fprintf(w, "Admin request denied by an admin!")
+			return
+		}
+
 		user.AdminReq = "pending"
 		database.DB.Save(&user)
+
+		fmt.Fprintf(w, "Admin request sent successfully!")
 	}
 }
 
@@ -108,7 +126,7 @@ func ApproveAdminRequests(w http.ResponseWriter, r *http.Request) {
 			ids = append(ids, id)
 		}
 
-		database.DB.Where("id IN (?)", ids).Updates(map[string]interface{}{"role": "admin", "admin_req": "approved"})
+		database.DB.Model(&types.User{}).Where("id IN (?)", ids).Updates(map[string]interface{}{"role": "admin", "admin_req": "approved"})
 
 		fmt.Fprintf(w, "%d Admin request(s) approved successfully!", len(ids))
 	}
@@ -135,9 +153,9 @@ func DenyAdminRequests(w http.ResponseWriter, r *http.Request) {
 			ids = append(ids, id)
 		}
 
-		database.DB.Where("id IN (?)", ids).Update("admin_req", "denied")
+		database.DB.Model(&types.User{}).Where("id IN (?)", ids).Update("admin_req", "denied")
 
-		fmt.Fprintf(w, "%d Admin request(s) approved successfully!", len(ids))
+		fmt.Fprintf(w, "%d Admin request(s) denied successfully!", len(ids))
 	}
 }
 
@@ -191,20 +209,54 @@ func ManageUserProfile(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-		r.ParseForm()
-		id := r.FormValue("id")
-
-		var user types.User
-		database.DB.First(&user, id)
-		user.Username = r.FormValue("username")
-		user.Email = r.FormValue("email")
-		user.Phone = r.FormValue("phone")
-		hash, err := auth.CreateHash(r.FormValue("password"))
+		cookie, _ := r.Cookie("token")
+		decoded, err := auth.DecodeJWT(cookie.Value)
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)
 			return
 		}
-		user.Password = hash
+
+		id := decoded.UserID
+		var user types.User
+		database.DB.First(&user, id)
+
+		r.ParseForm()
+
+		user.Username = r.FormValue("username")
+		user.Email = r.FormValue("email")
+		user.Phone = r.FormValue("phone")
+		password := r.FormValue("password")
+
+		pass_matched, err := auth.VerifyHash(password, user.Password)
+		if err != nil || !pass_matched {
+			http.Error(w, "Invalid password! Please enter correct current password!", http.StatusBadRequest)
+			return
+		}
+
+		new_password := r.FormValue("newpass")
+		if len(new_password) > 0 && len(new_password) < 8 {
+			http.Error(w, "New password should be atleast 8 characters", http.StatusBadRequest)
+			return
+		} else {
+			hash, err := auth.CreateHash(new_password)
+			if err != nil {
+				http.Error(w, "Some error occured", http.StatusInternalServerError)
+				return
+			}
+			user.Password = hash
+		}
+
+		var temp_user types.User
+		database.DB.First(&temp_user, "phone = ?", user.Phone)
+		if temp_user.ID != 0 && temp_user.ID != user.ID {
+			http.Error(w, "Phone number already occupied", http.StatusBadRequest)
+			return
+		}
+		database.DB.First(&temp_user, "email = ?", user.Email)
+		if temp_user.ID != 0 && temp_user.ID != user.ID {
+			http.Error(w, "Email already occupied", http.StatusBadRequest)
+			return
+		}
 
 		if len(user.Phone) != 10 {
 			http.Error(w, "Phone number should be of 10 digits", http.StatusBadRequest)
@@ -218,17 +270,25 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if len(user.Password) < 8 {
-			http.Error(w, "Password should be atleast 8 characters", http.StatusBadRequest)
+		if len(user.Username) < 3 {
+			http.Error(w, "Username too short", http.StatusBadRequest)
+			return
+		} else if len(user.Username) > 50 {
+			http.Error(w, "Username too long", http.StatusBadRequest)
 			return
 		}
 
-		if user.Email == "" || user.Username == "" {
-			http.Error(w, "Name and Email cannot be empty", http.StatusBadRequest)
+		_, err = mail.ParseAddress(user.Email)
+		if err != nil {
+			http.Error(w, "Invalid email", http.StatusBadRequest)
 			return
 		}
 
 		user.Address = r.FormValue("address")
+		if len(user.Address) < 4 {
+			http.Error(w, "Address too short", http.StatusBadRequest)
+			return
+		}
 
 		err = database.DB.Save(&user).Error
 		if err != nil {

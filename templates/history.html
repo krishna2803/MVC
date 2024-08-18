@@ -1,39 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borrow History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/history.css">
 </head>
+
 <body>
-    <h1>Borrow History</h1>
-    <button onclick="window.location.href = '/'">Back</button>
-    <button id="return-btn" onclick="returnSelectedBooks()">Return Selected Books</button>
-    <table>
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Borrowed On</th>
-                <th>Returned On</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range . }}
-            <tr>
-                <td><input type="checkbox" name="borrow" value="{{ .ID }}" {{ if ne .Status "approved" }}disabled{{ end }}></td>
-                <td>{{ .Title }}</td>
-                <td>{{ .Author }}</td>
-                <td>{{ .BorrowedAt }}</td>
-                <td>{{ .ReturnedAt }}</td>
-                <td>{{ .Status }}</td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+    <div class="container">
+        <h1>Borrow History</h1>
+        <button onclick="window.location.href = '/'">Back</button>
+        <button id="return-btn" onclick="returnSelectedBooks()">Return Selected Books</button>
+        <table class="table table-responsive">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Borrowed On</th>
+                    <th>Returned On</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range . }}
+                <tr>
+                    <td><input type="checkbox" name="borrow" value="{{ .ID }}" {{ if ne .Status "approved" }}disabled{{
+                            end }}></td>
+                    <td>{{ .Title }}</td>
+                    <td>{{ .Author }}</td>
+                    <td>
+                        {{ if or (eq .Status "approved") (eq .Status "returned") }}
+                        {{ .BorrowedAt }}
+                        {{ else }}
+                        -
+                        {{ end}}
+                    </td>
+                    <td>
+                        {{ if ne .Status "returned" }}
+                        -
+                        {{ else }}
+                        {{ .ReturnedAt }}
+                        {{ end}}
+                    </td>
+                    <td>{{ .Status }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const container = document.querySelector('.container');
+            container.style.opacity = 0;
+            container.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                container.style.opacity = 1;
+                container.style.transform = 'scale(1)';
+            }, 100);
+        });
+
         const returnButton = document.getElementById('return-btn');
 
         const returnSelectedBooks = () => {
@@ -62,4 +93,5 @@
         }
     </script>
 </body>
+
 </html>

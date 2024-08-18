@@ -1,35 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Requests</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/admin_requests.css">
 </head>
+
 <body>
-    <h1>Admin Requests</h1>
-    <button onclick="window.location.href = '/'">Back</button>
-    <table>
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Address</th>
-                <th>Request Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ range . }}
-            <tr>
-                <td><input type="checkbox" name="user" value="{{ .ID }}"></td>
-                <td>{{ .Username }}</td>
-                <td>{{ .Phone }}</td>
-                <td>{{ .Email }}</td>
-                <td>{{ .Address }}</td>
-                <td>{{ .AdminReq }}</td>
-            </tr>
-            {{ end }}
-    </table>
+    <div class="container">
+        <h1>Admin Requests</h1>
+        <button onclick="window.location.href = '/'">Back</button>
+        <button id="approve-btn" onclick="approveRequests()">Approve Selected</button>
+        <button id="deny-btn" onclick="denyRequests()">Deny Selected</button>
+        <table class="table table-responsive">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th>Request Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range . }}
+                <tr>
+                    <td><input type="checkbox" name="user" value="{{ .ID }}" {{ if ne .AdminReq "pending"}}disabled{{ end }}></td>
+                    <td>{{ .Username }}</td>
+                    <td>{{ .Phone }}</td>
+                    <td>{{ .Email }}</td>
+                    <td>{{ .Address }}</td>
+                    <td>{{ .AdminReq }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.querySelector('.container');
+            container.style.opacity = 0;
+            container.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                container.style.opacity = 1;
+                container.style.transform = 'scale(1)';
+            }, 100);
+        });
+
+        const approveButton = document.getElementById('approve-btn');
+        const denyButton = document.getElementById('deny-btn');
+
+        const checkboxes = document.querySelectorAll('input[name="user"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            checkbox.addEventListener('change', () => {
+                const checkedCheckboxes = document.querySelectorAll('input[name="user"]:checked');
+
+                approveButton.disabled = checkedCheckboxes.length === 0;
+                denyButton.disabled = checkedCheckboxes.length === 0;
+            });
+        });
+
+        const approveRequests = () => {
+            const selectedUsers = document.querySelectorAll('input[name="user"]:checked');
+
+            if (selectedUsers.length === 0) {
+                alert('Please select at least one user to approve.');
+                return;
+            }
+
+            let formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedUsers).map(checkbox => checkbox.value)));
+
+            fetch('/approve_admin_requests', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData,
+            }).then(async res => {
+                if (res.ok) {
+                    alert(await res.text());
+                    window.location.reload();
+                }
+            }).catch(err => {
+                console.error(err);
+            });
+        }
+
+        const denyRequests = () => {
+            const selectedUsers = document.querySelectorAll('input[name="user"]:checked');
+
+            if (selectedUsers.length === 0) {
+                alert('Please select at least one user to deny.');
+                return;
+            }
+
+            let formData = new URLSearchParams();
+            formData.append('id', JSON.stringify(Array.from(selectedUsers).map(checkbox => checkbox.value)));
+
+            fetch('/deny_admin_requests', {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                method: 'POST',
+                body: formData,
+            }).then(async res => {
+                if (res.ok) {
+                    alert(await res.text());
+                    window.location.reload();
+                }
+            }).catch(err => {
+                console.error(err);
+            });
+        }
+    </script>
 </body>
+
 </html>

@@ -59,11 +59,11 @@ type Borrow struct {
 }
 
 type APIBorrow struct {
-	ID         uint   `json:"id"`
-	BookID     uint   `json:"book_id"`
-	UserID     uint   `json:"user_id"`
-	Status     string `json:"status"`
-	Count      int    `json:"count"`
-	BorrowedAt string `json:"borrowed_at"`
-	ReturnedAt string `json:"returned_at"`
+	ID         uint      `json:"id"`
+	BookID     uint      `json:"book_id"`
+	UserID     uint      `json:"user_id"`
+	Status     string    `json:"status"`
+	Count      int       `json:"count"`
+	BorrowedAt time.Time `json:"borrowed_at"`
+	ReturnedAt time.Time `json:"returned_at"`
 }
