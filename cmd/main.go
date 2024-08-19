@@ -13,7 +13,10 @@ func main() {
 	if err != nil {
 		panic("Error loading .env file")
 	}
-	database.Init()
+	err = database.Init()
+	if err != nil {
+		panic(err)
+	}
 
 	controller.AddDummyBookData()
 

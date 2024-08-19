@@ -7,8 +7,9 @@
 3. Configure an `.env` according to `.env.sample`.
 4. `go mod vendor`
 5. `go mod tidy`
-6. `go run cmd/main.go`
-7. The website will be up at `localhost:5050`.
+6. `go build -o mvc ./cmd/main.go`
+7. `./mvc`
+8. The website will be up at `localhost:5050`.
 
 ### How to Run? (The Docker Way)
 WIP.

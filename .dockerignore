@@ -1,0 +1,8 @@
+.git
+README.md
+.gitignore
+.dockerignore
+.env.sample
+vendor
+Dockerfile
+./mvc
