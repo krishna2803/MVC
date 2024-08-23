@@ -174,6 +174,15 @@ func RemoveBooks(w http.ResponseWriter, r *http.Request) {
 			ids = append(ids, int(id))
 		}
 
+		var borrowed_books []types.APIBorrow
+		database.DB.Model(&types.Borrow{}).Where("book_id IN (?)", ids).Find(&borrowed_books)
+		for _, borrow := range borrowed_books {
+			if borrow.Status == "approved" {
+				http.Error(w, "Can't delete borrowed books!", http.StatusInternalServerError)
+				return
+			}
+		}
+
 		err = database.DB.Where("id IN (?)", ids).Delete(&types.Book{}).Error
 		if err != nil {
 			http.Error(w, "Some error occured", http.StatusInternalServerError)

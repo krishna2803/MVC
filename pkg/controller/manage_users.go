@@ -84,6 +84,19 @@ func MakeAdminRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		id := decoded.UserID
+
+		api_borrows := []types.Borrow{}
+		database.DB.Where("user_id = ?", decoded.UserID).Find(&api_borrows)
+		for _, borrow := range api_borrows {
+			if borrow.Status == "approved" {
+				http.Error(w, "You need to return some books before requesting for admin request!", http.StatusInternalServerError)
+				return
+			} else if borrow.Status == "pending" {
+				http.Error(w, "You have some pending book requests! You cannot request for admin role.", http.StatusInternalServerError)
+				return
+			}
+		}
+
 		user := types.User{}
 		err = database.DB.First(&user, id).Error
 		if err != nil {
