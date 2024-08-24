@@ -15,14 +15,14 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, _ := auth.DecodeJWT(cookie.Value)
+		user, err := auth.DecodeJWT(cookie.Value)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
 		if user.Role == "admin" {
 			t := template.Must(template.ParseFiles("templates/admin_dashboard.html"))
 			t.Execute(w, user)
-			return
-		}
-		if user.Role != "admin" {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 

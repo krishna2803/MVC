@@ -42,5 +42,4 @@ EXPOSE 5050
 # start nginx
 CMD ["ash", "-c", "su-exec \
       postgres pg_ctl start -D /var/lib/postgresql/data -l /var/lib/postgresql/logfile.log && \
-      nginx && \
-      ./mvc"]
+      /bin/ash"]
