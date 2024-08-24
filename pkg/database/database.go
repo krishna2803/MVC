@@ -19,10 +19,10 @@ func connect() (*gorm.DB, error) {
 	db_user := os.Getenv("DB_USER")
 	db_pass := os.Getenv("DB_PASS")
 	db_name := os.Getenv("DB_NAME")
+	db_host := os.Getenv("DB_HOST")
 
-	dsn := fmt.Sprintf("host=localhost user=%s password=%s dbname=%s sslmode=disable", db_user, db_pass, db_name)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable", db_host, db_user, db_pass, db_name)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		// disable annoying not found errors
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
