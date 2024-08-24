@@ -1,22 +1,16 @@
-FROM alpine:latest
+FROM golang:alpine
 
 RUN [ "env" ]
 
 RUN apk update && \
     apk add --no-cache \
         su-exec \
-        curl \
-        build-base \
         postgresql \
         nginx
 
 # yahan pe dockerignore se kuchh packages ignore karne hain
 COPY . /app
 WORKDIR /app
-
-RUN wget https://go.dev/dl/go1.23.0.linux-amd64.tar.gz && \
-    tar xvf go1.23.0.linux-amd64.tar.gz && \
-    mv go /usr/local
 
 # fir environment setup
 ENV HOME='/root'
